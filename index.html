@@ -1,0 +1,1364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>A little question…</title>
+<style>
+  /* ============================================================
+     THEME
+     ============================================================ */
+  :root {
+    --bg1: #fdf3f0;
+    --bg2: #fbe9ec;
+    --bg3: #f6eefb;
+    --ink: #4a3942;
+    --pink: #e0457b;
+    --pink-deep: #c4205f;
+    --pink-soft: #f7b8cf;
+    --pink-bg: #fde7ef;
+    --gray-pill: #e9e4e6;
+    --gray-ink: #9b9098;
+    --card: #ffffff;
+    --shadow: 0 18px 40px -18px rgba(196, 32, 95, .35);
+    --serif: "Hoefler Text", "Iowan Old Style", Palatino, Georgia, "Times New Roman", serif;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, Roboto, sans-serif;
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    min-height: 100%;
+    font-family: var(--sans);
+    color: var(--ink);
+    background: linear-gradient(160deg, var(--bg1) 0%, var(--bg2) 45%, var(--bg3) 100%);
+    background-attachment: fixed;
+    overflow-x: hidden;
+  }
+
+  body {
+    display: flex;
+    justify-content: center;
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+
+  /* floating background hearts */
+  #bg-hearts {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+  }
+  .bg-heart {
+    position: absolute;
+    font-size: 18px;
+    opacity: .18;
+    animation: floatUp linear infinite;
+    will-change: transform, opacity;
+  }
+  @keyframes floatUp {
+    0%   { transform: translateY(110vh) scale(.7) rotate(0deg); opacity: 0; }
+    8%   { opacity: .22; }
+    92%  { opacity: .22; }
+    100% { transform: translateY(-12vh) scale(1.1) rotate(40deg); opacity: 0; }
+  }
+
+  /* confetti / celebration canvas */
+  #fx {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 60;
+  }
+
+  /* music on/off button */
+  #sound-toggle {
+    position: fixed;
+    top: 14px;
+    right: 14px;
+    z-index: 70;
+    width: 42px;
+    height: 42px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, .72);
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+    box-shadow: 0 6px 16px -8px rgba(196, 32, 95, .45);
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    transition: transform .15s ease, background .2s ease;
+  }
+  #sound-toggle:hover { background: #fff; transform: scale(1.08); }
+  #sound-toggle:active { transform: scale(.92); }
+
+  /* ============================================================
+     LAYOUT
+     ============================================================ */
+  .stage {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 480px;
+    padding: 22px 22px 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .screen {
+    width: 100%;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    animation: screenIn .55s cubic-bezier(.2,.8,.25,1) both;
+  }
+  .screen.active { display: flex; }
+  @keyframes screenIn {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ============================================================
+     HEART PROGRESS TRACKER
+     ============================================================ */
+  .tracker {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 8px 0 26px;
+    height: 26px;
+  }
+  .tracker .node {
+    font-size: 17px;
+    line-height: 1;
+    color: var(--pink-soft);
+    transition: transform .35s cubic-bezier(.2,1.4,.4,1), color .35s ease, opacity .35s ease;
+    opacity: .55;
+  }
+  .tracker .node.done { color: var(--pink); opacity: 1; }
+  .tracker .node.current {
+    color: var(--pink);
+    opacity: 1;
+    transform: scale(1.35);
+    animation: nodePop .5s ease;
+  }
+  @keyframes nodePop {
+    0% { transform: scale(.6); }
+    60% { transform: scale(1.55); }
+    100% { transform: scale(1.35); }
+  }
+  .tracker .link {
+    width: 22px;
+    height: 2px;
+    border-radius: 2px;
+    background: var(--pink-soft);
+    opacity: .5;
+    transition: background .35s ease, opacity .35s ease;
+  }
+  .tracker .link.done { background: var(--pink); opacity: 1; }
+
+  /* ============================================================
+     TYPOGRAPHY
+     ============================================================ */
+  h1.display {
+    font-family: var(--serif);
+    font-weight: 700;
+    color: var(--pink);
+    font-size: clamp(34px, 9.5vw, 46px);
+    line-height: 1.05;
+    letter-spacing: -0.5px;
+    margin: 6px 0 4px;
+    text-shadow: 0 2px 0 rgba(255,255,255,.5);
+  }
+  h1.display .em { color: var(--pink-deep); font-style: italic; }
+  .sub {
+    font-size: 15px;
+    color: #8a7680;
+    margin: 6px 0 0;
+    max-width: 30ch;
+  }
+  .tiny {
+    font-size: 12.5px;
+    color: #a8979f;
+    margin-top: 4px;
+  }
+
+  /* sticker */
+  .sticker {
+    font-size: 64px;
+    line-height: 1;
+    margin-bottom: 10px;
+    filter: drop-shadow(0 10px 14px rgba(196,32,95,.22));
+    animation: bob 3.4s ease-in-out infinite;
+  }
+  @keyframes bob {
+    0%,100% { transform: translateY(0) rotate(-3deg); }
+    50% { transform: translateY(-8px) rotate(3deg); }
+  }
+
+  /* ============================================================
+     BUTTONS
+     ============================================================ */
+  .btn {
+    font-family: var(--sans);
+    font-size: 17px;
+    font-weight: 700;
+    border: none;
+    border-radius: 999px;
+    padding: 15px 30px;
+    cursor: pointer;
+    transition: transform .15s ease, box-shadow .2s ease, background .2s ease, filter .2s ease;
+    user-select: none;
+  }
+  .btn-yes {
+    background: linear-gradient(180deg, #ee5a8d, var(--pink));
+    color: #fff;
+    box-shadow: var(--shadow);
+  }
+  .btn-yes:hover { transform: translateY(-2px) scale(1.03); filter: brightness(1.04); }
+  .btn-yes:active { transform: translateY(0) scale(.97); }
+
+  .btn-no {
+    background: var(--gray-pill);
+    color: var(--gray-ink);
+    box-shadow: 0 8px 18px -10px rgba(0,0,0,.25);
+    position: relative;
+  }
+  .btn-primary {
+    background: linear-gradient(180deg, #ee5a8d, var(--pink));
+    color: #fff;
+    box-shadow: var(--shadow);
+    width: 100%;
+    max-width: 320px;
+  }
+  .btn-primary:hover:not(:disabled) { transform: translateY(-2px) scale(1.02); filter: brightness(1.04); }
+  .btn-primary:active:not(:disabled) { transform: translateY(0) scale(.98); }
+  .btn-primary:disabled {
+    background: var(--gray-pill);
+    color: var(--gray-ink);
+    box-shadow: none;
+    cursor: not-allowed;
+    filter: none;
+  }
+
+  .choice-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin-top: 26px;
+    flex-wrap: wrap;
+    min-height: 64px;
+  }
+
+  /* ============================================================
+     INTRO — "no" escape
+     ============================================================ */
+  #screen-intro { position: relative; }
+  /* center every screen's content vertically (.stage padding = 22 top + 40 bottom = 62px) */
+  #screen-intro.active,
+  #screen-yay.active {
+    justify-content: center;
+    min-height: calc(100dvh - 62px);
+    margin-top: -8px;
+  }
+  /* screens with a progress tracker: the hearts stay pinned at the top,
+     the rest of the content centers in the space below them */
+  #screen-when.active,
+  #screen-food.active,
+  #screen-done.active { min-height: calc(100dvh - 62px); }
+  #screen-when.active > .tracker + *,
+  #screen-food.active > .tracker + *,
+  #screen-done.active > .tracker + * { margin-top: auto; }
+  #screen-when.active > *:last-child,
+  #screen-food.active > *:last-child,
+  #screen-done.active > *:last-child { margin-bottom: auto; }
+  .no-wrap {
+    /* keeps layout stable while #no may go fixed */
+    display: inline-flex;
+  }
+  /* the No button moves only via a bounded transform, so it can never leave its area */
+  #no { transition: transform .4s cubic-bezier(.25,.85,.35,1); }
+  #no.flee { z-index: 40; will-change: transform; }
+
+  /* ============================================================
+     WHEN — calendar + time
+     ============================================================ */
+  .panel {
+    width: 100%;
+    background: var(--card);
+    border-radius: 22px;
+    box-shadow: 0 16px 36px -22px rgba(120,60,90,.4);
+    padding: 16px 16px 18px;
+    margin-bottom: 16px;
+  }
+  .cal-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    padding: 0 4px;
+  }
+  .cal-title { font-weight: 700; font-size: 15px; color: var(--ink); }
+  .cal-nav {
+    border: none;
+    background: var(--pink-bg);
+    color: var(--pink);
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    font-size: 16px;
+    cursor: pointer;
+    display: grid; place-items: center;
+    transition: background .15s ease, transform .15s ease;
+  }
+  .cal-nav:hover { background: var(--pink-soft); }
+  .cal-nav:active { transform: scale(.9); }
+  .cal-nav:disabled { opacity: .3; cursor: not-allowed; }
+
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+  .cal-dow {
+    font-size: 11px;
+    color: #b6a6ad;
+    font-weight: 600;
+    padding: 4px 0;
+    text-transform: uppercase;
+    letter-spacing: .3px;
+  }
+  .cal-day {
+    aspect-ratio: 1 / 1;
+    display: grid;
+    place-items: center;
+    font-size: 13.5px;
+    border-radius: 50%;
+    cursor: pointer;
+    color: var(--ink);
+    position: relative;
+    transition: background .15s ease, color .15s ease, transform .15s ease;
+  }
+  .cal-day:hover:not(.disabled):not(.empty) { background: var(--pink-bg); }
+  .cal-day.disabled, .cal-day.empty {
+    color: #d8cdd2;
+    cursor: default;
+    pointer-events: none;
+  }
+  .cal-day.today:not(.selected) { box-shadow: inset 0 0 0 1.5px var(--pink-soft); }
+  .cal-day.selected {
+    background: var(--pink);
+    color: #fff;
+    font-weight: 700;
+    transform: scale(1.05);
+    animation: nodePop .4s ease;
+  }
+  .cal-day.selected::after {
+    content: "♥";
+    position: absolute;
+    top: -3px; right: 1px;
+    font-size: 9px;
+    color: var(--pink-deep);
+    text-shadow: 0 0 2px #fff;
+  }
+
+  .field-label {
+    text-align: left;
+    width: 100%;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--pink);
+    margin: 2px 2px 7px;
+    text-transform: lowercase;
+    letter-spacing: .2px;
+  }
+
+  /* custom time dropdown */
+  .select {
+    position: relative;
+    width: 100%;
+    text-align: left;
+  }
+  .select-trigger {
+    width: 100%;
+    background: var(--card);
+    border: 1.5px solid #f0e2e8;
+    border-radius: 14px;
+    padding: 14px 42px 14px 16px;
+    font-size: 15px;
+    color: var(--ink);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: border-color .15s ease, box-shadow .15s ease;
+  }
+  .select-trigger.placeholder { color: #b6a6ad; }
+  .select-trigger:hover { border-color: var(--pink-soft); }
+  .select.open .select-trigger {
+    border-color: var(--pink);
+    box-shadow: 0 0 0 3px rgba(224,69,123,.12);
+  }
+  .select-trigger .chev { color: var(--pink); transition: transform .2s ease; flex: none; margin-left: 10px; }
+  .select.open .select-trigger .chev { transform: rotate(180deg); }
+
+  .select-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0; right: 0;
+    background: var(--card);
+    border-radius: 14px;
+    box-shadow: 0 22px 44px -18px rgba(120,40,80,.45);
+    padding: 6px;
+    z-index: 30;
+    display: none;
+    max-height: 260px;
+    overflow-y: auto;
+  }
+  .select.open .select-menu { display: block; animation: screenIn .22s ease both; }
+  .opt {
+    padding: 11px 12px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 14.5px;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    transition: background .12s ease;
+  }
+  .opt:hover { background: var(--pink-bg); }
+  .opt.sel { background: var(--pink-bg); }
+  .opt .opt-main { font-weight: 700; color: var(--ink); }
+  .opt .opt-note { font-size: 12.5px; color: #a8979f; }
+
+  /* ============================================================
+     FOOD cards
+     ============================================================ */
+  .food-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    width: 100%;
+    margin-bottom: 18px;
+  }
+  .food {
+    background: var(--card);
+    border: 2px solid transparent;
+    border-radius: 20px;
+    padding: 18px 10px 14px;
+    cursor: pointer;
+    box-shadow: 0 12px 26px -20px rgba(120,60,90,.5);
+    transition: transform .15s ease, border-color .15s ease, box-shadow .2s ease;
+    position: relative;
+    user-select: none;
+  }
+  .food:hover { transform: translateY(-3px); }
+  .food:active { transform: scale(.97); }
+  .food .emoji { font-size: 40px; line-height: 1; display: block; margin-bottom: 8px; transition: transform .2s ease; }
+  .food .name { font-size: 14px; font-weight: 600; color: var(--ink); }
+  .food.sel {
+    border-color: var(--pink);
+    box-shadow: 0 14px 30px -16px rgba(224,69,123,.6);
+  }
+  .food.sel .emoji { transform: scale(1.18) rotate(-6deg); }
+  .food .check {
+    position: absolute;
+    top: 8px; right: 8px;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: var(--pink);
+    color: #fff;
+    font-size: 13px;
+    display: grid; place-items: center;
+    opacity: 0;
+    transform: scale(.4);
+    transition: opacity .18s ease, transform .18s cubic-bezier(.2,1.5,.4,1);
+  }
+  .food.sel .check { opacity: 1; transform: scale(1); }
+
+  /* ============================================================
+     CONFIRMATION
+     ============================================================ */
+  .summary {
+    width: 100%;
+    background: var(--card);
+    border-radius: 22px;
+    box-shadow: 0 16px 36px -22px rgba(120,60,90,.4);
+    padding: 4px 6px;
+    margin: 18px 0 22px;
+    text-align: left;
+    overflow: hidden;
+  }
+  .sum-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 16px 18px;
+  }
+  .sum-row + .sum-row { border-top: 1px solid #f4e9ee; }
+  .sum-ico { font-size: 24px; line-height: 1; margin-top: 2px; }
+  .sum-k { font-size: 11px; font-weight: 700; letter-spacing: 1px; color: #c5a9b5; text-transform: uppercase; }
+  .sum-v { font-size: 16px; font-weight: 600; color: var(--pink-deep); margin-top: 3px; }
+  .sum-v.sub2 { font-size: 14px; font-weight: 500; color: var(--ink); }
+
+  .confirm-line {
+    font-size: 15px;
+    color: #8a7680;
+    margin: 4px 0 0;
+    max-width: 32ch;
+    line-height: 1.45;
+  }
+
+  .replay {
+    margin-top: 18px;
+    font-size: 13px;
+    color: #bdadb4;
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .replay:hover { color: var(--pink); }
+
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+  <div id="bg-hearts" aria-hidden="true"></div>
+  <canvas id="fx" aria-hidden="true"></canvas>
+  <button id="sound-toggle" aria-label="Toggle music">🔇</button>
+
+  <main class="stage">
+
+    <!-- ====================== INTRO ====================== -->
+    <section id="screen-intro" class="screen active">
+      <div class="sticker" aria-hidden="true">💌</div>
+      <h1 class="display" id="intro-title">Will you go on a date with me, <span class="em">love</span>?</h1>
+      <div class="choice-row">
+        <button class="btn btn-yes" id="yes">Yes 🥰</button>
+        <span class="no-wrap"><button class="btn btn-no" id="no">No</button></span>
+      </div>
+    </section>
+
+    <!-- ====================== CELEBRATION ====================== -->
+    <section id="screen-yay" class="screen">
+      <div class="sticker" aria-hidden="true">🎉</div>
+      <h1 class="display" id="yay-title">no way. <span class="em">NO WAY.</span> 🙈</h1>
+      <p class="sub" id="yay-sub">marrying you was the best yes ever — this is a close second 💕</p>
+    </section>
+
+    <!-- ====================== WHEN ====================== -->
+    <section id="screen-when" class="screen">
+      <div class="tracker" data-step="1" aria-hidden="true"></div>
+      <h1 class="display">So… <span class="em">when</span> are you free? 🥹</h1>
+      <div class="panel" style="margin-top:18px;">
+        <div class="cal-head">
+          <button class="cal-nav" id="cal-prev" aria-label="Previous month">‹</button>
+          <div class="cal-title" id="cal-title">Month</div>
+          <button class="cal-nav" id="cal-next" aria-label="Next month">›</button>
+        </div>
+        <div class="cal-grid" id="cal-grid"></div>
+      </div>
+      <div style="width:100%;">
+        <div class="field-label">what time? ⏰</div>
+        <div class="select" id="time-select">
+          <div class="select-trigger placeholder" id="time-trigger">
+            <span id="time-label">Select a time…</span>
+            <span class="chev">▾</span>
+          </div>
+          <div class="select-menu" id="time-menu"></div>
+        </div>
+      </div>
+      <button class="btn btn-primary" id="when-next" style="margin-top:22px;" disabled>Next →</button>
+    </section>
+
+    <!-- ====================== FOOD ====================== -->
+    <section id="screen-food" class="screen">
+      <div class="tracker" data-step="2" aria-hidden="true"></div>
+      <h1 class="display">What are we <span class="em">feeling</span>? 🍴</h1>
+      <p class="tiny">(you can pick more than one btw)</p>
+      <div class="food-grid" id="food-grid" style="margin-top:16px;"></div>
+      <button class="btn btn-primary" id="food-next" disabled>this one! →</button>
+    </section>
+
+    <!-- ====================== CONFIRMATION ====================== -->
+    <section id="screen-done" class="screen">
+      <div class="tracker" data-step="3" aria-hidden="true"></div>
+      <h1 class="display">It's a <span class="em">date!</span> 💌</h1>
+      <p class="confirm-line" id="done-line">7:00 PM it is. I'll be the one outside trying to look chill 😎</p>
+      <div class="summary">
+        <div class="sum-row">
+          <span class="sum-ico" aria-hidden="true">🗓️</span>
+          <div>
+            <div class="sum-k">When</div>
+            <div class="sum-v" id="done-when">—</div>
+          </div>
+        </div>
+        <div class="sum-row">
+          <span class="sum-ico" aria-hidden="true">🍽️</span>
+          <div>
+            <div class="sum-k">Food</div>
+            <div class="sum-v sub2" id="done-food">—</div>
+          </div>
+        </div>
+      </div>
+      <button class="btn btn-primary" id="ics-btn">Add to calendar 💌</button>
+      <button class="replay" id="replay">start over</button>
+    </section>
+
+  </main>
+
+<script>
+/* ============================================================
+   ✦ EASY-EDIT SETTINGS — tweak these lines freely ✦
+   ============================================================ */
+
+// What to call her in the opening line. Leave empty for no name.
+const HER_NAME = "Love";
+
+// 📍 SET THE PLACE: this goes into the calendar event's location.
+//    Leave it as-is if you'd rather keep it a surprise, or change it
+//    to the real spot, e.g. "Our usual spot 🍝" or a restaurant name.
+const EVENT_LOCATION = "Somewhere lovely (I'll surprise you) 💕";
+
+// Calendar event details
+const EVENT_TITLE = "Date ❤️";
+const EVENT_DURATION_HOURS = 2;
+
+// Copy you can rewrite
+const COPY = {
+  introTitle: HER_NAME
+    ? `<span class="em">${HER_NAME}</span>, will you go on a date with me?`
+    : `Will you go on a date with me?`,
+  yesBtn: "Yes 🥰",
+  noBtn: "No",
+  yayTitle: `still <span class="em">yes</span>! 🥹`,
+  yaySub: "marrying you was the best yes ever — this is a close second 💕",
+  whenTitle: `So… <span class="em">when</span> are you free? 🥹`,
+  foodTitle: `What are we <span class="em">feeling</span>? 🍴`,
+  foodNote: "(you can pick more than one btw)",
+  doneTitle: `It's a <span class="em">date!</span> 💌`,
+  // {time} is replaced with the chosen time, e.g. "7:00 PM"
+  doneLine: "{time} it is. I'll be the one outside trying to look chill 😎",
+};
+
+// Time options shown in the dropdown. value = 24h "HH:MM".
+const TIME_OPTIONS = [
+  { value: "17:00", label: "5:00 PM", note: "me waiting with the reservations" },
+  { value: "18:00", label: "6:00 PM", note: "this is the right answer tbh" },
+  { value: "19:00", label: "7:00 PM", note: "you're making me hungry already" },
+  { value: "20:00", label: "8:00 PM", note: "we eating dinner or breakfast?" },
+  { value: "21:00", label: "9:00 PM", note: "late night fun fun 🌙" },
+];
+
+// Food choices (emoji art = no images needed)
+const FOOD_OPTIONS = [
+  { emoji: "🍕", name: "Pizza" },
+  { emoji: "🍣", name: "Sushi" },
+  { emoji: "🍔", name: "Burgers" },
+  { emoji: "🍝", name: "Pasta" },
+  { emoji: "🌮", name: "Tacos" },
+  { emoji: "🍜", name: "Ramen" },
+  { emoji: "🥗", name: "Something fresh" },
+  { emoji: "🍰", name: "Just dessert 😏" },
+];
+
+/* ============================================================
+   STATE
+   ============================================================ */
+const state = {
+  date: null,        // Date object (day, no time)
+  time: null,        // { value, label }
+  foods: [],         // array of names
+};
+
+const $ = (id) => document.getElementById(id);
+const screens = {
+  intro: $("screen-intro"),
+  yay: $("screen-yay"),
+  when: $("screen-when"),
+  food: $("screen-food"),
+  done: $("screen-done"),
+};
+
+function show(name) {
+  Object.values(screens).forEach(s => s.classList.remove("active"));
+  // retrigger entrance animation
+  const el = screens[name];
+  el.classList.add("active");
+  el.style.animation = "none";
+  void el.offsetWidth;
+  el.style.animation = "";
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+// apply editable copy to the DOM
+$("intro-title").innerHTML = COPY.introTitle;
+$("yes").textContent = COPY.yesBtn;
+$("no").textContent = COPY.noBtn;
+$("yay-title").innerHTML = COPY.yayTitle;
+$("yay-sub").textContent = COPY.yaySub;
+document.querySelector("#screen-when h1").innerHTML = COPY.whenTitle;
+document.querySelector("#screen-food h1").innerHTML = COPY.foodTitle;
+document.querySelector("#screen-food .tiny").textContent = COPY.foodNote;
+$("yay-title").innerHTML = COPY.yayTitle;
+document.querySelector("#screen-done h1").innerHTML = COPY.doneTitle;
+
+/* ============================================================
+   HEART PROGRESS TRACKERS
+   build a row of hearts; `current` index highlights the active step
+   ============================================================ */
+const TRACK_STEPS = 3; // When, Food, Done
+document.querySelectorAll(".tracker").forEach(tr => {
+  const step = parseInt(tr.dataset.step, 10); // 1-based current
+  for (let i = 1; i <= TRACK_STEPS; i++) {
+    const node = document.createElement("span");
+    node.className = "node";
+    node.textContent = "♥";
+    if (i < step) node.classList.add("done");
+    if (i === step) node.classList.add("current");
+    tr.appendChild(node);
+    if (i < TRACK_STEPS) {
+      const link = document.createElement("span");
+      link.className = "link" + (i < step ? " done" : "");
+      tr.appendChild(link);
+    }
+  }
+});
+
+/* ============================================================
+   BACKGROUND FLOATING HEARTS
+   ============================================================ */
+(function makeBgHearts() {
+  const wrap = $("bg-hearts");
+  const glyphs = ["💕","💗","💖","🩷","❤️"];
+  const N = 22;
+  for (let i = 0; i < N; i++) {
+    const h = document.createElement("span");
+    h.className = "bg-heart";
+    h.textContent = glyphs[i % glyphs.length];
+    h.style.left = (Math.random() * 100) + "vw";
+    const dur = 12 + Math.random() * 14;
+    h.style.animationDuration = dur + "s";
+    h.style.animationDelay = (-Math.random() * dur) + "s";
+    h.style.fontSize = (12 + Math.random() * 18) + "px";
+    wrap.appendChild(h);
+  }
+})();
+
+/* ============================================================
+   INTRO — the fleeing "No" button
+   ============================================================ */
+const noBtn = $("no");
+const yesBtn = $("yes");
+let dodges = 0;
+let lastFlee = 0;
+let homeRect = null;     // the button's natural on-screen box (captured once, no transform)
+let ox = 0, oy = 0;      // current translate offset from that home spot
+
+const FLEE_MIN = 100;    // each dodge hops a random distance in this range
+const FLEE_MAX = 150;
+const FLEE_NEAR = 36;    // how close the cursor gets before it scoots away
+const MAX_OFF_X = 210;   // button never strays more than this far from home (so it can't
+const MAX_OFF_Y = 175;   // run off to the side of a wide window — stays near the question)
+
+// measure the button's natural position with any transform removed
+function captureHome() {
+  const prev = noBtn.style.transform;
+  noBtn.style.transform = "none";
+  const r = noBtn.getBoundingClientRect();
+  noBtn.style.transform = prev;
+  return { left: r.left, top: r.top, w: r.width, h: r.height };
+}
+
+function bumpEscalation() {
+  dodges++;
+  // cute escalation: No shrinks, Yes grows
+  const noScale = Math.max(0.62, 1 - dodges * 0.045);
+  noBtn.style.fontSize = (17 * noScale).toFixed(1) + "px";
+  const yesScale = Math.min(1.6, 1 + dodges * 0.055);
+  yesBtn.style.transform = `scale(${yesScale})`;
+  if (dodges === 4) noBtn.textContent = "no?";
+  if (dodges === 9) noBtn.textContent = "really?";
+  if (dodges === 14) noBtn.textContent = "c'mon 🙄";
+}
+
+// scoot a little, directly away from point (px, py), with the offset bounded near home
+function fleeFrom(px, py) {
+  if (!homeRect) homeRect = captureHome();
+  noBtn.classList.add("flee");
+  const { left, top, w, h } = homeRect;
+  const pad = 10;
+
+  // current centre = home + current offset
+  const cx = left + ox + w / 2, cy = top + oy + h / 2;
+  const dx = cx - px, dy = cy - py;
+  const dist = Math.hypot(dx, dy);
+  let baseAng = dist > 0.001 ? Math.atan2(dy, dx) : Math.random() * Math.PI * 2;
+
+  // bounds for the offset: stay near home AND on-screen
+  const loX = Math.max(-MAX_OFF_X, pad - left);
+  const hiX = Math.min(MAX_OFF_X, window.innerWidth - pad - w - left);
+  const loY = Math.max(-MAX_OFF_Y, pad - top);
+  const hiY = Math.min(MAX_OFF_Y, window.innerHeight - pad - h - top);
+
+  const hop = FLEE_MIN + Math.random() * (FLEE_MAX - FLEE_MIN);  // random hop distance
+  let nox = ox, noy = oy;
+  for (let attempt = 0; attempt < 6; attempt++) {
+    const ang = baseAng + (Math.random() - 0.5) * 0.8;  // slight wobble so it dodges sideways too
+    nox = Math.max(loX, Math.min(hiX, ox + Math.cos(ang) * hop));
+    noy = Math.max(loY, Math.min(hiY, oy + Math.sin(ang) * hop));
+    if (Math.hypot(nox - ox, noy - oy) > hop * 0.4) break;  // moved enough — done
+    // cornered: head back toward home (offset 0,0) instead
+    baseAng = (ox || oy) ? Math.atan2(-oy, -ox) : Math.random() * Math.PI * 2;
+  }
+  ox = nox; oy = noy;
+  noBtn.style.transform =
+    `translate(${ox.toFixed(1)}px, ${oy.toFixed(1)}px) rotate(${(Math.random() * 12 - 6).toFixed(1)}deg)`;
+  bumpEscalation();
+}
+
+// desktop chase: when the cursor gets close, the button scoots a little (paced so it glides)
+document.addEventListener("mousemove", (e) => {
+  if (!screens.intro.classList.contains("active")) return;
+  const now = Date.now();
+  if (now - lastFlee < 280) return;
+  const rect = noBtn.getBoundingClientRect();
+  const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
+  if (Math.hypot(cx - e.clientX, cy - e.clientY) < rect.width / 2 + FLEE_NEAR) {
+    lastFlee = now;
+    fleeFrom(e.clientX, e.clientY);
+  }
+});
+// fallback if the pointer lands right on it
+noBtn.addEventListener("mouseenter", (e) => {
+  const now = Date.now();
+  if (now - lastFlee < 220) return;
+  lastFlee = now;
+  fleeFrom(e.clientX, e.clientY);
+});
+// mobile + fallback: dodge before a tap can land
+noBtn.addEventListener("touchstart", (e) => {
+  e.preventDefault();
+  const t = e.touches[0];
+  fleeFrom(t ? t.clientX : window.innerWidth / 2, t ? t.clientY : window.innerHeight / 2);
+}, { passive: false });
+noBtn.addEventListener("click", (e) => { e.preventDefault(); fleeFrom(e.clientX, e.clientY); });
+
+yesBtn.addEventListener("click", onYes);
+
+/* ============================================================
+   CELEBRATION
+   ============================================================ */
+function onYes() {
+  show("yay");
+  startMusic();          // cue the corny romantic soundtrack 🎶
+  burstConfetti();
+  startHeartRain();
+  // auto-advance, but let her tap to skip ahead
+  let advanced = false;
+  const go = () => {
+    if (advanced) return;
+    advanced = true;
+    stopHeartRain();
+    screens.yay.removeEventListener("click", go);
+    show("when");
+  };
+  screens.yay.addEventListener("click", go);
+  setTimeout(go, 3200);
+}
+
+/* ============================================================
+   CALENDAR
+   ============================================================ */
+const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const DOW = ["Su","Mo","Tu","We","Th","Fr","Sa"];
+
+const today = new Date();
+today.setHours(0,0,0,0);
+let viewYear = today.getFullYear();
+let viewMonth = today.getMonth();
+
+function sameDay(a, b) {
+  return a && b && a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate();
+}
+
+function renderCalendar() {
+  $("cal-title").textContent = `${MONTHS[viewMonth]} ${viewYear}`;
+  const grid = $("cal-grid");
+  grid.innerHTML = "";
+
+  DOW.forEach(d => {
+    const c = document.createElement("div");
+    c.className = "cal-dow";
+    c.textContent = d;
+    grid.appendChild(c);
+  });
+
+  const first = new Date(viewYear, viewMonth, 1);
+  const startDow = first.getDay();
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+
+  for (let i = 0; i < startDow; i++) {
+    const e = document.createElement("div");
+    e.className = "cal-day empty";
+    grid.appendChild(e);
+  }
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const cell = document.createElement("div");
+    cell.className = "cal-day";
+    cell.textContent = d;
+    const dDate = new Date(viewYear, viewMonth, d);
+    dDate.setHours(0,0,0,0);
+
+    if (dDate < today) cell.classList.add("disabled");
+    if (sameDay(dDate, today)) cell.classList.add("today");
+    if (sameDay(dDate, state.date)) cell.classList.add("selected");
+
+    if (dDate >= today) {
+      cell.addEventListener("click", () => {
+        state.date = dDate;
+        renderCalendar();
+        updateWhenNext();
+      });
+    }
+    grid.appendChild(cell);
+  }
+
+  // disable prev nav when at/over current month
+  const atCurrent = (viewYear === today.getFullYear() && viewMonth === today.getMonth());
+  $("cal-prev").disabled = atCurrent;
+}
+
+$("cal-prev").addEventListener("click", () => {
+  if (viewYear === today.getFullYear() && viewMonth === today.getMonth()) return;
+  viewMonth--; if (viewMonth < 0) { viewMonth = 11; viewYear--; }
+  renderCalendar();
+});
+$("cal-next").addEventListener("click", () => {
+  viewMonth++; if (viewMonth > 11) { viewMonth = 0; viewYear++; }
+  renderCalendar();
+});
+
+/* ============================================================
+   TIME DROPDOWN (custom)
+   ============================================================ */
+const timeSelect = $("time-select");
+const timeMenu = $("time-menu");
+TIME_OPTIONS.forEach(opt => {
+  const el = document.createElement("div");
+  el.className = "opt";
+  el.innerHTML = `<span class="opt-main">${opt.label}</span><span class="opt-note">${opt.note}</span>`;
+  el.addEventListener("click", () => {
+    state.time = { value: opt.value, label: opt.label };
+    $("time-label").textContent = opt.label;
+    $("time-trigger").classList.remove("placeholder");
+    timeMenu.querySelectorAll(".opt").forEach(o => o.classList.remove("sel"));
+    el.classList.add("sel");
+    timeSelect.classList.remove("open");
+    updateWhenNext();
+  });
+  timeMenu.appendChild(el);
+});
+$("time-trigger").addEventListener("click", (e) => {
+  e.stopPropagation();
+  timeSelect.classList.toggle("open");
+});
+document.addEventListener("click", () => timeSelect.classList.remove("open"));
+
+function updateWhenNext() {
+  $("when-next").disabled = !(state.date && state.time);
+}
+$("when-next").addEventListener("click", () => { if (!$("when-next").disabled) show("food"); });
+
+/* ============================================================
+   FOOD
+   ============================================================ */
+const foodGrid = $("food-grid");
+FOOD_OPTIONS.forEach(f => {
+  const card = document.createElement("div");
+  card.className = "food";
+  card.innerHTML = `<span class="check">✓</span><span class="emoji">${f.emoji}</span><span class="name">${f.name}</span>`;
+  card.addEventListener("click", () => {
+    card.classList.toggle("sel");
+    const i = state.foods.indexOf(f.name);
+    if (i === -1) state.foods.push(f.name); else state.foods.splice(i, 1);
+    $("food-next").disabled = state.foods.length === 0;
+  });
+  foodGrid.appendChild(card);
+});
+$("food-next").addEventListener("click", () => { if (!$("food-next").disabled) goDone(); });
+
+/* ============================================================
+   CONFIRMATION
+   ============================================================ */
+function ordinal(n) {
+  const s = ["th","st","nd","rd"], v = n % 100;
+  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+}
+function formatWhen() {
+  const weekday = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][state.date.getDay()];
+  const month = MONTHS[state.date.getMonth()];
+  return `${weekday}, ${month} ${ordinal(state.date.getDate())}\nat ${state.time.label}`;
+}
+function foodList() {
+  const f = state.foods;
+  if (f.length === 1) return f[0];
+  if (f.length === 2) return `${f[0]} & ${f[1]}`;
+  return f.slice(0, -1).join(", ") + " & " + f[f.length - 1];
+}
+
+function goDone() {
+  const whenStr = formatWhen();
+  $("done-when").innerHTML = whenStr.replace("\n", "<br>");
+  $("done-food").textContent = foodList();
+  $("done-line").textContent = COPY.doneLine.replace("{time}", state.time.label);
+  show("done");
+  setTimeout(() => burstConfetti(0.5), 250);
+}
+
+/* ============================================================
+   ICS DOWNLOAD
+   ============================================================ */
+function pad(n) { return String(n).padStart(2, "0"); }
+function icsLocalStamp(y, mo, d, h, mi) {
+  return `${y}${pad(mo)}${pad(d)}T${pad(h)}${pad(mi)}00`;
+}
+function escICS(s) {
+  return String(s).replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\n/g, "\\n");
+}
+
+$("ics-btn").addEventListener("click", () => {
+  const [hh, mm] = state.time.value.split(":").map(Number);
+  const y = state.date.getFullYear();
+  const mo = state.date.getMonth() + 1;
+  const d = state.date.getDate();
+
+  const endTotal = hh * 60 + mm + EVENT_DURATION_HOURS * 60;
+  const endH = Math.floor(endTotal / 60) % 24;
+  const endM = endTotal % 60;
+  // if duration pushes past midnight, keep it on the same calendar day-ish (simple, floating time)
+  const dtStart = icsLocalStamp(y, mo, d, hh, mm);
+  const dtEnd = icsLocalStamp(y, mo, d, endH, endM);
+  const stamp = icsLocalStamp(y, mo, d, hh, mm);
+
+  const desc = `Food: ${foodList()}\\nCan't wait. 💕`;
+  const uid = `date-${y}${pad(mo)}${pad(d)}-${pad(hh)}${pad(mm)}@go-on-a-date`;
+
+  const ics = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//Go On A Date//EN",
+    "CALSCALE:GREGORIAN",
+    "BEGIN:VEVENT",
+    `UID:${uid}`,
+    `DTSTAMP:${stamp}`,
+    `DTSTART:${dtStart}`,
+    `DTEND:${dtEnd}`,
+    `SUMMARY:${escICS(EVENT_TITLE)}`,
+    `LOCATION:${escICS(EVENT_LOCATION)}`,
+    `DESCRIPTION:${desc}`,
+    "END:VEVENT",
+    "END:VCALENDAR",
+  ].join("\r\n");
+
+  const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "our-date.ics";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1500);
+
+  burstConfetti(0.7);
+  const btn = $("ics-btn");
+  btn.textContent = "Saved! see you there 💖";
+  setTimeout(() => { btn.textContent = "Add to calendar 💌"; }, 2600);
+});
+
+/* ============================================================
+   REPLAY
+   ============================================================ */
+$("replay").addEventListener("click", () => {
+  state.date = null; state.time = null; state.foods = [];
+  dodges = 0; ox = 0; oy = 0; homeRect = null;
+  noBtn.classList.remove("flee");
+  noBtn.style = ""; noBtn.textContent = COPY.noBtn;
+  yesBtn.style.transform = "";
+  $("time-label").textContent = "Select a time…";
+  $("time-trigger").classList.add("placeholder");
+  timeMenu.querySelectorAll(".opt").forEach(o => o.classList.remove("sel"));
+  foodGrid.querySelectorAll(".food").forEach(c => c.classList.remove("sel"));
+  $("when-next").disabled = true;
+  $("food-next").disabled = true;
+  viewYear = today.getFullYear(); viewMonth = today.getMonth();
+  renderCalendar();
+  show("intro");
+});
+
+/* ============================================================
+   CONFETTI + HEART RAIN  (vanilla canvas, no libraries)
+   ============================================================ */
+const canvas = $("fx");
+const ctx = canvas.getContext("2d");
+let DPR = Math.min(window.devicePixelRatio || 1, 2);
+function sizeCanvas() {
+  DPR = Math.min(window.devicePixelRatio || 1, 2);
+  canvas.width = window.innerWidth * DPR;
+  canvas.height = window.innerHeight * DPR;
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+}
+sizeCanvas();
+window.addEventListener("resize", () => { sizeCanvas(); homeRect = null; });
+
+let particles = [];
+const COLORS = ["#e0457b","#ee5a8d","#f7b8cf","#ffd166","#9b5de5","#ff8fab","#fcbf49"];
+
+function burstConfetti(scale = 1) {
+  const cx = window.innerWidth / 2;
+  const cy = window.innerHeight * 0.42;
+  const count = Math.round(140 * scale);
+  for (let i = 0; i < count; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = (4 + Math.random() * 9) * (0.7 + scale * 0.5);
+    particles.push({
+      type: "confetti",
+      x: cx, y: cy,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed - 4,
+      g: 0.18 + Math.random() * 0.1,
+      size: 6 + Math.random() * 7,
+      color: COLORS[(Math.random() * COLORS.length) | 0],
+      rot: Math.random() * Math.PI,
+      vr: (Math.random() - 0.5) * 0.3,
+      life: 1,
+      decay: 0.006 + Math.random() * 0.006,
+      shape: Math.random() < 0.4 ? "rect" : "circle",
+    });
+  }
+  // …plus confetti cannons firing in from the sides
+  sideCannon("left", scale);
+  sideCannon("right", scale);
+  ensureRaf();
+}
+
+// a confetti cannon shooting in from the left or right edge, angled up toward the middle
+function sideCannon(side = "left", scale = 1) {
+  const fromLeft = side === "left";
+  const x = fromLeft ? -12 : window.innerWidth + 12;
+  const y = window.innerHeight * (0.55 + Math.random() * 0.12);
+  const baseAngle = fromLeft ? -Math.PI / 4 : -3 * Math.PI / 4;  // up-right / up-left
+  const count = Math.round(80 * scale);
+  for (let i = 0; i < count; i++) {
+    const angle = baseAngle + (Math.random() - 0.5) * (Math.PI / 3);  // ~60° spread
+    const speed = (10 + Math.random() * 10) * (0.7 + scale * 0.5);
+    particles.push({
+      type: "confetti",
+      x, y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      g: 0.18 + Math.random() * 0.1,
+      size: 6 + Math.random() * 7,
+      color: COLORS[(Math.random() * COLORS.length) | 0],
+      rot: Math.random() * Math.PI,
+      vr: (Math.random() - 0.5) * 0.3,
+      life: 1,
+      decay: 0.005 + Math.random() * 0.005,
+      shape: Math.random() < 0.4 ? "rect" : "circle",
+    });
+  }
+  ensureRaf();
+}
+
+let rainOn = false;
+let rainTimer = null;
+function startHeartRain() {
+  rainOn = true;
+  const glyphs = ["💕","💗","💖","❤️","🩷"];
+  rainTimer = setInterval(() => {
+    if (!rainOn) return;
+    for (let k = 0; k < 2; k++) {
+      particles.push({
+        type: "heart",
+        glyph: glyphs[(Math.random() * glyphs.length) | 0],
+        x: Math.random() * window.innerWidth,
+        y: -20,
+        vx: (Math.random() - 0.5) * 1.2,
+        vy: 1.6 + Math.random() * 2.4,
+        size: 16 + Math.random() * 18,
+        rot: (Math.random() - 0.5) * 0.6,
+        vr: (Math.random() - 0.5) * 0.05,
+        life: 1, decay: 0,
+      });
+    }
+    ensureRaf();
+  }, 120);
+}
+function stopHeartRain() {
+  rainOn = false;
+  if (rainTimer) clearInterval(rainTimer);
+  rainTimer = null;
+}
+
+let rafId = null;
+function ensureRaf() { if (!rafId) rafId = requestAnimationFrame(tick); }
+
+function tick() {
+  ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+  const H = window.innerHeight;
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.x += p.vx;
+    p.y += p.vy;
+    p.rot += p.vr;
+
+    if (p.type === "confetti") {
+      p.vy += p.g;
+      p.vx *= 0.99;
+      p.life -= p.decay;
+      if (p.life <= 0 || p.y > H + 40) { particles.splice(i, 1); continue; }
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, p.life);
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot);
+      ctx.fillStyle = p.color;
+      if (p.shape === "rect") {
+        ctx.fillRect(-p.size/2, -p.size/4, p.size, p.size/2);
+      } else {
+        ctx.beginPath();
+        ctx.arc(0, 0, p.size/2, 0, Math.PI*2);
+        ctx.fill();
+      }
+      ctx.restore();
+    } else { // heart
+      if (p.y > H + 30) { particles.splice(i, 1); continue; }
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot);
+      ctx.font = p.size + "px serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(p.glyph, 0, 0);
+      ctx.restore();
+    }
+  }
+  if (particles.length > 0 || rainOn) {
+    rafId = requestAnimationFrame(tick);
+  } else {
+    rafId = null;
+    ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+  }
+}
+
+/* ============================================================
+   MUSIC — a simple, corny romantic melody (Web Audio, no files)
+   I–vi–IV–V (the classic lovey-dovey progression), looped softly.
+   ============================================================ */
+const MASTER_VOL = 0.6;
+const BEAT = 0.5;  // seconds per beat
+const F = {
+  F2:87.31, G2:98.00, A2:110.00, C3:130.81,
+  F3:174.61, G3:196.00, A3:220.00, B3:246.94,
+  C4:261.63, D4:293.66, E4:329.63, F4:349.23, G4:392.00,
+  A4:440.00, B4:493.88, C5:523.25,
+};
+// lead line: [note, beats]
+const LEAD = [
+  ["E4",1],["G4",1],["C5",2],
+  ["C5",1],["B4",1],["A4",2],
+  ["A4",1],["G4",1],["F4",1],["E4",1],
+  ["D4",1],["G4",1],["B4",2],
+];
+// walking bass: [note, beats]
+const BASS = [
+  ["C3",2],["C3",2], ["A2",2],["A2",2],
+  ["F2",2],["F2",2], ["G2",2],["G2",2],
+];
+// soft sustained chord pad per measure: [[notes], beats]
+const CHORDS = [
+  [["C4","E4","G4"],4], [["A3","C4","E4"],4],
+  [["F3","A3","C4"],4], [["G3","B3","D4"],4],
+];
+const LOOP_BEATS = 16;
+
+let audioCtx = null, masterGain = null;
+let musicOn = false, musicTimer = null, nextLoopTime = 0;
+
+function playNote(freq, start, dur, type, vol) {
+  const o = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  o.type = type;
+  o.frequency.value = freq;
+  o.connect(g); g.connect(masterGain);
+  const atk = 0.04, rel = Math.min(0.3, dur * 0.5);
+  g.gain.setValueAtTime(0, start);
+  g.gain.linearRampToValueAtTime(vol, start + atk);
+  g.gain.setValueAtTime(vol, start + Math.max(atk, dur - rel));
+  g.gain.linearRampToValueAtTime(0, start + dur);
+  o.start(start);
+  o.stop(start + dur + 0.03);
+}
+
+function scheduleLoop() {
+  if (!musicOn) return;
+  const start = nextLoopTime;
+  let t = 0;
+  for (const [n, b] of LEAD)  { playNote(F[n], start + t * BEAT, b * BEAT * 0.9, "triangle", 0.2);  t += b; }
+  t = 0;
+  for (const [n, b] of BASS)  { playNote(F[n], start + t * BEAT, b * BEAT * 0.9, "sine", 0.16); t += b; }
+  t = 0;
+  for (const [ns, b] of CHORDS) { for (const n of ns) playNote(F[n], start + t * BEAT, b * BEAT * 0.95, "sine", 0.04); t += b; }
+  nextLoopTime = start + LOOP_BEATS * BEAT;
+  musicTimer = setTimeout(scheduleLoop, (LOOP_BEATS * BEAT - 0.25) * 1000);
+}
+
+function startMusic() {
+  if (musicOn) return;
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    masterGain = audioCtx.createGain();
+    masterGain.gain.value = 0;
+    masterGain.connect(audioCtx.destination);
+  }
+  audioCtx.resume();
+  musicOn = true;
+  updateSoundIcon();
+  masterGain.gain.cancelScheduledValues(audioCtx.currentTime);
+  masterGain.gain.setValueAtTime(masterGain.gain.value, audioCtx.currentTime);
+  masterGain.gain.linearRampToValueAtTime(MASTER_VOL, audioCtx.currentTime + 1.0);  // fade in
+  nextLoopTime = audioCtx.currentTime + 0.12;
+  scheduleLoop();
+}
+
+function stopMusic() {
+  if (!musicOn) return;
+  musicOn = false;
+  updateSoundIcon();
+  if (musicTimer) { clearTimeout(musicTimer); musicTimer = null; }
+  if (masterGain) {
+    masterGain.gain.cancelScheduledValues(audioCtx.currentTime);
+    masterGain.gain.setValueAtTime(masterGain.gain.value, audioCtx.currentTime);
+    masterGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.4);  // fade out
+  }
+}
+
+const soundBtn = $("sound-toggle");
+function updateSoundIcon() { soundBtn.textContent = musicOn ? "🔊" : "🔇"; }
+soundBtn.addEventListener("click", () => { musicOn ? stopMusic() : startMusic(); });
+
+/* ============================================================
+   INIT
+   ============================================================ */
+renderCalendar();
+</script>
+</body>
+</html>
