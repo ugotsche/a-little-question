@@ -76,28 +76,69 @@
   }
 
   /* music on/off button */
-  #sound-toggle {
+  #arg-toggle {
     position: fixed;
     top: 14px;
     right: 14px;
     z-index: 70;
-    width: 42px;
-    height: 42px;
+    width: 46px;
+    height: 46px;
     border: none;
     border-radius: 50%;
-    background: rgba(255, 255, 255, .72);
+    background: rgba(255, 255, 255, .82);
     -webkit-backdrop-filter: blur(6px);
     backdrop-filter: blur(6px);
-    box-shadow: 0 6px 16px -8px rgba(196, 32, 95, .45);
-    font-size: 18px;
+    box-shadow: 0 6px 16px -8px rgba(40, 120, 180, .55);
+    font-size: 22px;
     line-height: 1;
     cursor: pointer;
     display: grid;
     place-items: center;
-    transition: transform .15s ease, background .2s ease;
+    transition: transform .15s ease, box-shadow .2s ease;
+    animation: argPulse 1.8s ease-in-out infinite;
   }
-  #sound-toggle:hover { background: #fff; transform: scale(1.08); }
-  #sound-toggle:active { transform: scale(.92); }
+  #arg-toggle:hover { transform: scale(1.1) rotate(-6deg); }
+  #arg-toggle:active { transform: scale(.92); }
+  @keyframes argPulse {
+    0%, 100% { box-shadow: 0 6px 16px -8px rgba(40,120,180,.55); }
+    50%      { box-shadow: 0 6px 22px -6px rgba(58,160,224,.95); }
+  }
+  body.arg #arg-toggle { animation: none; box-shadow: 0 6px 20px -6px rgba(30,111,179,.9); }
+
+  /* ===== ARGENTINA MODE — celeste / white / blue takeover ===== */
+  body.arg {
+    --bg1: #eaf4fb; --bg2: #d2e9f7; --bg3: #ffffff;
+    --ink: #16435f;
+    --pink: #2f9fe0;        /* celeste */
+    --pink-deep: #1565a8;   /* deep blue */
+    --pink-soft: #a9d6f2;
+    --pink-bg: #e4f2fc;
+    --gray-pill: #e6eef4;
+    --gray-ink: #7e96a8;
+    --shadow: 0 18px 40px -18px rgba(21, 101, 168, .4);
+    background: linear-gradient(160deg, #eaf4fb 0%, #cfe7f6 45%, #ffffff 100%);
+  }
+  body.arg .btn-yes,
+  body.arg .btn-primary { background: linear-gradient(180deg, #6fc0ec, #2a8fd4); }
+  body.arg h1.display { text-shadow: 0 2px 0 rgba(255,255,255,.7); }
+
+  /* a little "VAMOS" ribbon that appears only in Argentina mode */
+  #arg-banner {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 65;
+    display: none;
+    text-align: center;
+    font-weight: 800;
+    letter-spacing: 1px;
+    font-size: 13px;
+    color: #fff;
+    padding: 5px 54px 5px 12px;
+    background: linear-gradient(90deg, #74b9e8, #2a8fd4, #74b9e8);
+    box-shadow: 0 2px 10px -4px rgba(21,101,168,.6);
+  }
+  body.arg #arg-banner { display: block; }
+  body.arg .stage { padding-top: 36px; }
 
   /* ============================================================
      LAYOUT
@@ -532,7 +573,8 @@
 <body>
   <div id="bg-hearts" aria-hidden="true"></div>
   <canvas id="fx" aria-hidden="true"></canvas>
-  <button id="sound-toggle" aria-label="Toggle music">🔇</button>
+  <div id="arg-banner" aria-hidden="true">¡VAMOS ARGENTINA! 🇦🇷 ⭐⭐⭐ CAMPEONES DEL MUNDO · MESSI 🐐</div>
+  <button id="arg-toggle" aria-label="Argentina mode" title="¿Argentina?">🇦🇷</button>
 
   <main class="stage">
 
@@ -566,7 +608,7 @@
         <div class="cal-grid" id="cal-grid"></div>
       </div>
       <div style="width:100%;">
-        <div class="field-label">what time? ⏰</div>
+        <div class="field-label" id="when-timelabel">what time? ⏰</div>
         <div class="select" id="time-select">
           <div class="select-trigger placeholder" id="time-trigger">
             <span id="time-label">Select a time…</span>
@@ -596,14 +638,14 @@
         <div class="sum-row">
           <span class="sum-ico" aria-hidden="true">🗓️</span>
           <div>
-            <div class="sum-k">When</div>
+            <div class="sum-k" id="sum-when-k">When</div>
             <div class="sum-v" id="done-when">—</div>
           </div>
         </div>
         <div class="sum-row">
           <span class="sum-ico" aria-hidden="true">🍽️</span>
           <div>
-            <div class="sum-k">Food</div>
+            <div class="sum-k" id="sum-food-k">Food</div>
             <div class="sum-v sub2" id="done-food">—</div>
           </div>
         </div>
@@ -638,15 +680,51 @@ const COPY = {
     : `Will you go on a date with me?`,
   yesBtn: "Yes 🥰",
   noBtn: "No",
+  dodge: ["no?", "really?", "c'mon 🙄"],
   yayTitle: `still <span class="em">yes</span>! 🥹`,
   yaySub: "marrying you was the best yes ever — this is a close second 💕",
   whenTitle: `So… <span class="em">when</span> are you free? 🥹`,
+  whatTime: "what time? ⏰",
+  timePlaceholder: "Select a time…",
+  nextBtn: "Next →",
   foodTitle: `What are we <span class="em">feeling</span>? 🍴`,
   foodNote: "(you can pick more than one btw)",
+  foodNextBtn: "this one! →",
   doneTitle: `It's a <span class="em">date!</span> 💌`,
   // {time} is replaced with the chosen time, e.g. "7:00 PM"
   doneLine: "{time} it is. I'll be the one across the table still wondering how I got so lucky 🥰",
+  sumWhen: "When",
+  sumFood: "Food",
+  icsBtn: "Add to calendar 💌",
+  icsSaved: "Saved! see you there 💖",
+  replay: "start over",
 };
+
+// 🇦🇷 Full Argentine-Spanish copy (Rioplatense slang) — used in Argentina mode
+const COPY_AR = {
+  introTitle: `¿Una cita conmigo, <span class="em">mi amor</span>? 🇦🇷`,
+  yesBtn: "¡Dale! 🥰",
+  noBtn: "No",
+  dodge: ["¿posta?", "¿en serio?", "¡dale, no jodas! 🙄"],
+  yayTitle: `¡<span class="em">VAMOS</span> ARGENTINA! 🇦🇷`,
+  yaySub: "Campeones del Mundo 🏆 · Messi 🐐 · ⭐⭐⭐ · y vos y yo 💙",
+  whenTitle: `Y… ¿<span class="em">cuándo</span> estás libre? 🥹`,
+  whatTime: "¿a qué hora? ⏰",
+  timePlaceholder: "Elegí un horario…",
+  nextBtn: "¡Dale! →",
+  foodTitle: `¿Qué tenés ganas de <span class="em">morfar</span>? 🍴`,
+  foodNote: "(podés elegir más de uno, eh)",
+  foodNextBtn: "¡estos! →",
+  doneTitle: `¡<span class="em">Salió</span> la cita! 💌`,
+  doneLine: "{time} entonces. Voy a ser el que te mira del otro lado de la mesa sin poder creer la suerte que tengo 🥰",
+  sumWhen: "Cuándo",
+  sumFood: "Morfi",
+  icsBtn: "Agendá la cita 💌",
+  icsSaved: "¡Agendado! nos vemos 💖",
+  replay: "empezar de nuevo",
+};
+let CUR = COPY;     // current copy set
+let argMode = false;
 
 // Time options shown in the dropdown. value = 24h "HH:MM".
 const TIME_OPTIONS = [
@@ -698,17 +776,28 @@ function show(name) {
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
-// apply editable copy to the DOM
-$("intro-title").innerHTML = COPY.introTitle;
-$("yes").textContent = COPY.yesBtn;
-$("no").textContent = COPY.noBtn;
-$("yay-title").innerHTML = COPY.yayTitle;
-$("yay-sub").textContent = COPY.yaySub;
-document.querySelector("#screen-when h1").innerHTML = COPY.whenTitle;
-document.querySelector("#screen-food h1").innerHTML = COPY.foodTitle;
-document.querySelector("#screen-food .tiny").textContent = COPY.foodNote;
-$("yay-title").innerHTML = COPY.yayTitle;
-document.querySelector("#screen-done h1").innerHTML = COPY.doneTitle;
+// apply a whole copy set (English or Argentine) to the DOM
+function applyCopy(c) {
+  CUR = c;
+  $("intro-title").innerHTML = c.introTitle;
+  $("yes").textContent = c.yesBtn;
+  $("no").textContent = c.noBtn;
+  $("yay-title").innerHTML = c.yayTitle;
+  $("yay-sub").innerHTML = c.yaySub;
+  document.querySelector("#screen-when h1").innerHTML = c.whenTitle;
+  $("when-timelabel").textContent = c.whatTime;
+  if ($("time-trigger").classList.contains("placeholder")) $("time-label").textContent = c.timePlaceholder;
+  $("when-next").textContent = c.nextBtn;
+  document.querySelector("#screen-food h1").innerHTML = c.foodTitle;
+  document.querySelector("#screen-food .tiny").textContent = c.foodNote;
+  $("food-next").textContent = c.foodNextBtn;
+  document.querySelector("#screen-done h1").innerHTML = c.doneTitle;
+  $("sum-when-k").textContent = c.sumWhen;
+  $("sum-food-k").textContent = c.sumFood;
+  $("ics-btn").textContent = c.icsBtn;
+  $("replay").textContent = c.replay;
+}
+applyCopy(COPY);
 
 /* ============================================================
    HEART PROGRESS TRACKERS
@@ -735,9 +824,11 @@ document.querySelectorAll(".tracker").forEach(tr => {
 /* ============================================================
    BACKGROUND FLOATING HEARTS
    ============================================================ */
-(function makeBgHearts() {
+const HEART_GLYPHS = ["💕","💗","💖","🩷","❤️"];
+const ARG_GLYPHS = ["🇦🇷","⚽","🏆","🐐","⭐","🧉","☀️"];
+function buildBgFloat(glyphs) {
   const wrap = $("bg-hearts");
-  const glyphs = ["💕","💗","💖","🩷","❤️"];
+  wrap.innerHTML = "";
   const N = 22;
   for (let i = 0; i < N; i++) {
     const h = document.createElement("span");
@@ -750,7 +841,8 @@ document.querySelectorAll(".tracker").forEach(tr => {
     h.style.fontSize = (12 + Math.random() * 18) + "px";
     wrap.appendChild(h);
   }
-})();
+}
+buildBgFloat(HEART_GLYPHS);
 
 /* ============================================================
    INTRO — the fleeing "No" button
@@ -784,9 +876,9 @@ function bumpEscalation() {
   noBtn.style.fontSize = (17 * noScale).toFixed(1) + "px";
   const yesScale = Math.min(1.6, 1 + dodges * 0.055);
   yesBtn.style.transform = `scale(${yesScale})`;
-  if (dodges === 4) noBtn.textContent = "no?";
-  if (dodges === 9) noBtn.textContent = "really?";
-  if (dodges === 14) noBtn.textContent = "c'mon 🙄";
+  if (dodges === 4) noBtn.textContent = CUR.dodge[0];
+  if (dodges === 9) noBtn.textContent = CUR.dodge[1];
+  if (dodges === 14) noBtn.textContent = CUR.dodge[2];
 }
 
 // scoot a little, directly away from point (px, py), with the offset bounded near home
@@ -858,8 +950,17 @@ yesBtn.addEventListener("click", onYes);
    ============================================================ */
 function onYes() {
   show("yay");
-  startMusic();          // cue the corny romantic soundtrack 🎶
-  burstConfetti();
+  startMusic();          // cue the soundtrack 🎶
+  // yay title/sub already match the current language via applyCopy(); just the sticker + blasts
+  document.querySelector("#screen-yay .sticker").textContent = argMode ? "🏆" : "🎉";
+  if (argMode) {
+    burstConfetti(1);
+    setTimeout(() => sideCannon("left", 1.3), 220);
+    setTimeout(() => sideCannon("right", 1.3), 420);
+    setTimeout(() => burstConfetti(0.85), 750);
+  } else {
+    burstConfetti();
+  }
   startHeartRain();
   // auto-advance, but let her tap to skip ahead
   let advanced = false;
@@ -879,6 +980,9 @@ function onYes() {
    ============================================================ */
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const DOW = ["Su","Mo","Tu","We","Th","Fr","Sa"];
+const MONTHS_AR = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+const WEEKDAYS_AR = ["domingo","lunes","martes","miércoles","jueves","viernes","sábado"];
+const DOW_AR = ["Do","Lu","Ma","Mi","Ju","Vi","Sá"];
 
 const today = new Date();
 today.setHours(0,0,0,0);
@@ -890,11 +994,13 @@ function sameDay(a, b) {
 }
 
 function renderCalendar() {
-  $("cal-title").textContent = `${MONTHS[viewMonth]} ${viewYear}`;
+  const months = argMode ? MONTHS_AR : MONTHS;
+  const dows = argMode ? DOW_AR : DOW;
+  $("cal-title").textContent = `${months[viewMonth]} ${viewYear}`;
   const grid = $("cal-grid");
   grid.innerHTML = "";
 
-  DOW.forEach(d => {
+  dows.forEach(d => {
     const c = document.createElement("div");
     c.className = "cal-dow";
     c.textContent = d;
@@ -952,21 +1058,28 @@ $("cal-next").addEventListener("click", () => {
    ============================================================ */
 const timeSelect = $("time-select");
 const timeMenu = $("time-menu");
-TIME_OPTIONS.forEach(opt => {
-  const el = document.createElement("div");
-  el.className = "opt";
-  el.innerHTML = `<span class="opt-main">${opt.label}</span><span class="opt-note">${opt.note}</span>`;
-  el.addEventListener("click", () => {
-    state.time = { value: opt.value, label: opt.label };
-    $("time-label").textContent = opt.label;
-    $("time-trigger").classList.remove("placeholder");
-    timeMenu.querySelectorAll(".opt").forEach(o => o.classList.remove("sel"));
-    el.classList.add("sel");
-    timeSelect.classList.remove("open");
-    updateWhenNext();
+function buildTime(list) {
+  timeMenu.innerHTML = "";
+  state.time = null;
+  $("time-label").textContent = CUR.timePlaceholder;
+  $("time-trigger").classList.add("placeholder");
+  list.forEach(opt => {
+    const el = document.createElement("div");
+    el.className = "opt";
+    el.innerHTML = `<span class="opt-main">${opt.label}</span><span class="opt-note">${opt.note}</span>`;
+    el.addEventListener("click", () => {
+      state.time = { value: opt.value, label: opt.label };
+      $("time-label").textContent = opt.label;
+      $("time-trigger").classList.remove("placeholder");
+      timeMenu.querySelectorAll(".opt").forEach(o => o.classList.remove("sel"));
+      el.classList.add("sel");
+      timeSelect.classList.remove("open");
+      updateWhenNext();
+    });
+    timeMenu.appendChild(el);
   });
-  timeMenu.appendChild(el);
-});
+}
+buildTime(TIME_OPTIONS);
 $("time-trigger").addEventListener("click", (e) => {
   e.stopPropagation();
   timeSelect.classList.toggle("open");
@@ -982,18 +1095,24 @@ $("when-next").addEventListener("click", () => { if (!$("when-next").disabled) s
    FOOD
    ============================================================ */
 const foodGrid = $("food-grid");
-FOOD_OPTIONS.forEach(f => {
-  const card = document.createElement("div");
-  card.className = "food";
-  card.innerHTML = `<span class="check">✓</span><span class="emoji">${f.emoji}</span><span class="name">${f.name}</span>`;
-  card.addEventListener("click", () => {
-    card.classList.toggle("sel");
-    const i = state.foods.indexOf(f.name);
-    if (i === -1) state.foods.push(f.name); else state.foods.splice(i, 1);
-    $("food-next").disabled = state.foods.length === 0;
+function buildFood(list) {
+  foodGrid.innerHTML = "";
+  state.foods = [];
+  $("food-next").disabled = true;
+  list.forEach(f => {
+    const card = document.createElement("div");
+    card.className = "food";
+    card.innerHTML = `<span class="check">✓</span><span class="emoji">${f.emoji}</span><span class="name">${f.name}</span>`;
+    card.addEventListener("click", () => {
+      card.classList.toggle("sel");
+      const i = state.foods.indexOf(f.name);
+      if (i === -1) state.foods.push(f.name); else state.foods.splice(i, 1);
+      $("food-next").disabled = state.foods.length === 0;
+    });
+    foodGrid.appendChild(card);
   });
-  foodGrid.appendChild(card);
-});
+}
+buildFood(FOOD_OPTIONS);
 $("food-next").addEventListener("click", () => { if (!$("food-next").disabled) goDone(); });
 
 /* ============================================================
@@ -1004,22 +1123,28 @@ function ordinal(n) {
   return n + (s[(v - 20) % 10] || s[v] || s[0]);
 }
 function formatWhen() {
+  if (argMode) {
+    const weekday = WEEKDAYS_AR[state.date.getDay()];
+    const month = MONTHS_AR[state.date.getMonth()];
+    return `${weekday} ${state.date.getDate()} de ${month}\na las ${state.time.label}`;
+  }
   const weekday = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][state.date.getDay()];
   const month = MONTHS[state.date.getMonth()];
   return `${weekday}, ${month} ${ordinal(state.date.getDate())}\nat ${state.time.label}`;
 }
 function foodList() {
   const f = state.foods;
+  const amp = argMode ? "y" : "&";
   if (f.length === 1) return f[0];
-  if (f.length === 2) return `${f[0]} & ${f[1]}`;
-  return f.slice(0, -1).join(", ") + " & " + f[f.length - 1];
+  if (f.length === 2) return `${f[0]} ${amp} ${f[1]}`;
+  return f.slice(0, -1).join(", ") + ` ${amp} ` + f[f.length - 1];
 }
 
 function goDone() {
   const whenStr = formatWhen();
   $("done-when").innerHTML = whenStr.replace("\n", "<br>");
   $("done-food").textContent = foodList();
-  $("done-line").textContent = COPY.doneLine.replace("{time}", state.time.label);
+  $("done-line").textContent = CUR.doneLine.replace("{time}", state.time.label);
   show("done");
   setTimeout(() => burstConfetti(0.5), 250);
 }
@@ -1049,7 +1174,10 @@ $("ics-btn").addEventListener("click", () => {
   const dtEnd = icsLocalStamp(y, mo, d, endH, endM);
   const stamp = icsLocalStamp(y, mo, d, hh, mm);
 
-  const desc = `Food: ${foodList()}\\nCan't wait. 💕`;
+  const summary = argMode ? "Cita ❤️ 🇦🇷" : EVENT_TITLE;
+  const desc = argMode
+    ? `Morfi: ${foodList()}\\n¡No veo la hora! 💙`
+    : `Food: ${foodList()}\\nCan't wait. 💕`;
   const uid = `date-${y}${pad(mo)}${pad(d)}-${pad(hh)}${pad(mm)}@go-on-a-date`;
 
   const ics = [
@@ -1062,7 +1190,7 @@ $("ics-btn").addEventListener("click", () => {
     `DTSTAMP:${stamp}`,
     `DTSTART:${dtStart}`,
     `DTEND:${dtEnd}`,
-    `SUMMARY:${escICS(EVENT_TITLE)}`,
+    `SUMMARY:${escICS(summary)}`,
     `LOCATION:${escICS(EVENT_LOCATION)}`,
     `DESCRIPTION:${desc}`,
     "END:VEVENT",
@@ -1081,8 +1209,8 @@ $("ics-btn").addEventListener("click", () => {
 
   burstConfetti(0.7);
   const btn = $("ics-btn");
-  btn.textContent = "Saved! see you there 💖";
-  setTimeout(() => { btn.textContent = "Add to calendar 💌"; }, 2600);
+  btn.textContent = CUR.icsSaved;
+  setTimeout(() => { btn.textContent = CUR.icsBtn; }, 2600);
 });
 
 /* ============================================================
@@ -1092,9 +1220,9 @@ $("replay").addEventListener("click", () => {
   state.date = null; state.time = null; state.foods = [];
   dodges = 0; ox = 0; oy = 0; homeRect = null;
   noBtn.classList.remove("flee");
-  noBtn.style = ""; noBtn.textContent = COPY.noBtn;
+  noBtn.style = ""; noBtn.textContent = CUR.noBtn;
   yesBtn.style.transform = "";
-  $("time-label").textContent = "Select a time…";
+  $("time-label").textContent = CUR.timePlaceholder;
   $("time-trigger").classList.add("placeholder");
   timeMenu.querySelectorAll(".opt").forEach(o => o.classList.remove("sel"));
   foodGrid.querySelectorAll(".food").forEach(c => c.classList.remove("sel"));
@@ -1121,7 +1249,9 @@ sizeCanvas();
 window.addEventListener("resize", () => { sizeCanvas(); homeRect = null; });
 
 let particles = [];
-const COLORS = ["#e0457b","#ee5a8d","#f7b8cf","#ffd166","#9b5de5","#ff8fab","#fcbf49"];
+const HEART_COLORS = ["#e0457b","#ee5a8d","#f7b8cf","#ffd166","#9b5de5","#ff8fab","#fcbf49"];
+const ARG_COLORS = ["#74b9e8","#ffffff","#2a8fd4","#ffd700","#a9d6f2","#1565a8","#bfe0f7"];
+let COLORS = HEART_COLORS;
 
 function burstConfetti(scale = 1) {
   const cx = window.innerWidth / 2;
@@ -1183,7 +1313,7 @@ let rainOn = false;
 let rainTimer = null;
 function startHeartRain() {
   rainOn = true;
-  const glyphs = ["💕","💗","💖","❤️","🩷"];
+  const glyphs = argMode ? ["🏆","⚽","🐐","🇦🇷","⭐","🧉"] : ["💕","💗","💖","❤️","🩷"];
   rainTimer = setInterval(() => {
     if (!rainOn) return;
     for (let k = 0; k < 2; k++) {
@@ -1410,9 +1540,55 @@ function stopMusic() {
   }
 }
 
-const soundBtn = $("sound-toggle");
-function updateSoundIcon() { soundBtn.textContent = musicOn ? "🔊" : "🔇"; }
-soundBtn.addEventListener("click", () => { musicOn ? stopMusic() : startMusic(); });
+function updateSoundIcon() {}  // sound is now driven by the Argentina flag toggle
+
+/* ============================================================
+   ARGENTINA MODE 🇦🇷 — tap the flag and everything goes celeste:
+   cumbia, Argentine-only food, dinner no earlier than 9pm, Messi & the Cup
+   ============================================================ */
+const ARG_FOOD = [
+  { emoji: "🥩", name: "Asado" },
+  { emoji: "🥟", name: "Empanadas" },
+  { emoji: "🌭", name: "Choripán" },
+  { emoji: "🍖", name: "Milanesa" },
+  { emoji: "🥪", name: "Sánguches de miga" },
+  { emoji: "🧀", name: "Provoleta" },
+  { emoji: "🍪", name: "Alfajores" },
+  { emoji: "🧉", name: "Mate" },
+];
+const ARG_TIME = [
+  { value: "21:00", label: "9:00 PM",  note: "temprano… recién arranca la previa 🧉" },
+  { value: "22:00", label: "10:00 PM", note: "hora normal de cenar, obvio" },
+  { value: "23:00", label: "11:00 PM", note: "la cocina recién se pone seria 🥩" },
+  { value: "00:00", label: "12:00 AM", note: "postre y sobremesa hasta tarde 🍮" },
+  { value: "01:00", label: "1:00 AM",  note: "la noche es joven, ¡dale! 🪩" },
+];
+const argBtn = $("arg-toggle");
+
+function setArgMode(on) {
+  argMode = on;
+  document.body.classList.toggle("arg", on);
+  argBtn.textContent = on ? "❌" : "🇦🇷";
+  argBtn.title = on ? "Volver al modo normal" : "¿Argentina?";
+  document.querySelector("#screen-intro .sticker").textContent = on ? "⚽" : "💌";
+  applyCopy(on ? COPY_AR : COPY);   // swap the entire UI language
+  if (on) {
+    COLORS = ARG_COLORS;
+    startMusic();                 // ¡que empiece la cumbia!
+    buildBgFloat(ARG_GLYPHS);
+    buildFood(ARG_FOOD);
+    buildTime(ARG_TIME);
+  } else {
+    COLORS = HEART_COLORS;
+    stopMusic();
+    buildBgFloat(HEART_GLYPHS);
+    buildFood(FOOD_OPTIONS);
+    buildTime(TIME_OPTIONS);
+  }
+  renderCalendar();                 // refresh month / day names for the language
+  burstConfetti(on ? 0.7 : 0.4);
+}
+argBtn.addEventListener("click", () => setArgMode(!argMode));
 
 /* ============================================================
    INIT
